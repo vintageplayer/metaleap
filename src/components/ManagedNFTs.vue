@@ -1,12 +1,12 @@
 <template>
   <v-container>
     <v-main v-if="getConnectedAccount">
-      <v-row v-if="getNFTs == null" style="text-align: center" align="center" justify="center">
+      <v-row v-if="getNFTs === null" style="text-align: center" align="center" justify="center" class="plain--text">
         No NFTs present in the collection
       </v-row>
       <v-row v-else>
         <v-dialog
-          v-for="nft in getNFTs"
+          v-for="nft in getNFTs.filter((nft) => showNFT(nft))"
           :key="nft.tokenId"
           :retain-focus="false"
           persistent
@@ -16,29 +16,51 @@
           <template v-slot:activator="{ on, attrs }">
             <div class="wNFT-card">
               <v-row>
-                <v-img :src="nft.tokenURI" height="250" width="300" />
+                <v-card class="secondary">
+                  <v-img :src="nft.tokenURI" height="250" width="300" />
+                  <v-card-title class="plain--text">NAME</v-card-title>
+                  <v-card-subtitle class="plain--text">Token Id: {{ nft.tokenId }}</v-card-subtitle>
+                </v-card>
               </v-row>
               <v-row justify="center">
-                <v-btn color="primary" dark v-bind="attrs" v-on:click="open_dialog(nft.tokenId)"> Options </v-btn>
+                <v-btn color="accent" dark v-bind="attrs" v-on:click="open_dialog(nft)"> Options </v-btn>
               </v-row>
             </div>
           </template>
           <v-card>
             <v-card-text>
               <v-container>
-                <v-text-field v-model="address" label="Enter Address"></v-text-field>
+                <v-row>
+                  <v-col>Owner: {{ owner }} </v-col>
+                </v-row>
+                <v-row>
+                  <v-col
+                    >Manager:
+                    {{
+                      approved == "0x0000000000000000000000000000000000000000" ? "No Manager assigned" : approved
+                    }}</v-col
+                  >
+                </v-row>
+                <v-row>
+                  <v-col>Player: {{ player || "No player assigned" }}</v-col>
+                </v-row>
+                <v-row>
+                  <v-text-field v-model="address" label="Enter Address"></v-text-field>
+                </v-row>
               </v-container>
             </v-card-text>
             <v-divider></v-divider>
             <v-card-actions>
+              <v-btn color="primary" text @click="submit('transfer', nft.tokenId)"> Change player </v-btn>
               <v-spacer></v-spacer>
-              <v-btn color="primary" text @click="submit('transfer', nft.tokenId)"> Transfer </v-btn>
+
+              <v-btn color="primary" text @click="dialog = false"> Close </v-btn>
             </v-card-actions>
           </v-card>
         </v-dialog>
       </v-row>
     </v-main>
-    <v-main>Connect wallet to see NFTs. The button is in the top right of the page !</v-main>
+    <v-main v-else class="plain--text">Connect wallet to see NFTs. The button is in the top right of the page !</v-main>
   </v-container>
 </template>
 
@@ -49,12 +71,14 @@ export default {
   data: () => ({
     dialog: false,
     address: "",
+    owner: "",
+    approved: "",
+    user: "",
   }),
   computed: {
     getNFTs() {
       if (this.$store.state.dataList_ManagedNFTs.nfts == null || this.$store.state.dataList_ManagedNFTs.nfts == {})
-        return [];
-      // console.log(this.$store.state.dataListQuery.nfts);
+        return null;
       return this.$store.state.dataList_ManagedNFTs.nfts;
     },
     getConnectedAccount() {
@@ -71,11 +95,15 @@ export default {
     },*/
   },
   methods: {
-    open_dialog(tokenId) {
-      this.tokenId = tokenId;
+    open_dialog(nft) {
+      this.tokenId = nft.tokenId;
+      this.user = nft.user;
+      this.owner = nft.owner;
+      this.approved = nft.approved;
+
       this.dialog = true;
     },
-    submit(buttonType, token_id) {
+    submit(buttonType) {
       let action = buttonType == "approve" ? "assignApprover" : "transfer";
 
       let account = this.$store.state.walletModule.account;
@@ -91,6 +119,7 @@ export default {
 
       this.$store
         .dispatch(action, {
+          from: this.user,
           to: this.address,
           tokenId: this.tokenId,
         })
@@ -99,6 +128,17 @@ export default {
         });
 
       this.dialog = false;
+    },
+    showNFT(nft) {
+      let account = this.$store.state.walletModule.account;
+      if (account == null || account == "") {
+        return false;
+      }
+
+      if (account == nft.approved) {
+        return true;
+      }
+      return true;
     },
   },
   async mounted() {
