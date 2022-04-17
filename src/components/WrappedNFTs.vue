@@ -3,66 +3,62 @@
     <v-row v-if="(getNFTList = null)" style="text-align: center" align="center" justify="center">
       No NFTs present in the collection
     </v-row>
-    <v-row>
-      <v-col v-for="nft in getNFTList" :key="nft.token_id" cols="4">
-        <v-img :src="nft.token_uri" height="250" />
-        <v-row justify="center">
-          <v-dialog v-model="dialog" max-width="290">
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark v-bind="attrs" v-on="on"> Approve</v-btn>
-            </template>
-            <v-card ref="ApproveManager">
-              <v-card-text>
-                <v-text-field ref="approve_manager" label="approve manager"></v-text-field>
-              </v-card-text>
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="primary" text @click="submit = false"> Submit </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-          <v-dialog v-model="dialog" max-width="290">
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn color="primary" dark v-bind="attrs" v-on="on"> Tranfer </v-btn>
-            </template>
-            <v-card ref="TransferToRentee">
-              <v-card-text>
-                <v-text-field ref="rentee" label="transfer to rentee"></v-text-field>
-              </v-card-text>
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="primary" text @click="submit"> Submit </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-        </v-row>
-      </v-col>
+    <v-row v-else>
+      <v-dialog
+        v-for="nft in getNFTList"
+        :key="nft.token_id"
+        :retain-focus="false"
+        persistent
+        v-model="dialog"
+        max-width="290"
+      >
+        <template v-slot:activator="{ on, attrs }">
+          <div class="wNFT-card">
+            <v-row>
+              <v-img :src="nft.token_uri" height="250" width="300" />
+            </v-row>
+            <v-row justify="center">
+              <v-btn color="primary" dark v-bind="attrs" v-on:click="openModal(nft.token_id)"> Options </v-btn>
+            </v-row>
+          </div>
+        </template>
+        <v-card>
+          <v-card-text>
+            <v-container>
+              <v-text-field v-model="address" label="Enter Address"></v-text-field>
+            </v-container>
+          </v-card-text>
+          <v-divider></v-divider>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn color="primary" text @click="dialog = false"> close </v-btn>
+            <v-btn color="primary" text @click="submit('approve', nft.token_id)"> Approve </v-btn>
+            <v-btn color="primary" text @click="submit('transfer', nft.token_id)"> Transfer </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
     </v-row>
   </v-container>
 </template>
 
+<style>
+.wNFT-card {
+  margin: 20px;
+}
+</style>
+
 <script>
 export default {
-  name: "MyCollection",
+  name: "WrappedNFT",
 
   components: {},
 
   data: () => ({
-    rentee: null,
-    manager: null,
+    address: "",
+    dialog: false,
+    tokenId: "",
   }),
   computed: {
-    transferToRentee() {
-      return {
-        rentee: this.rentee,
-      };
-    },
-    approveManager() {
-      return {
-        manager: this.manager,
-      };
-    },
-
     getNFTList() {
       const address = "0xe95C4707Ecf588dfd8ab3b253e00f45339aC3054";
       if (this.$store.state.nftList == null || this.$store.state.nftList == {}) return [];
@@ -71,9 +67,31 @@ export default {
       return this.$store.state.nftList[address];
     },
   },
-  method: {
-    submit() {
-      this.$refs.form.validate();
+  methods: {
+    openModal(token_id) {
+      this.dialog = true;
+      this.tokenId = token_id;
+    },
+
+    submit(buttonType, token_id) {
+      const account = this.$store.state.walletModule.account;
+      console.log(account);
+      if (account == null || account == "") {
+        this.$vToastify.warning("Connect your wallet please");
+        return;
+      }
+
+      var dispatchTo = buttonType == "approve" ? "assignApprover" : "transfer";
+
+      this.$store
+        .dispatch(dispatchTo, {
+          to: this.address,
+          tokenId: this.tokenId,
+        })
+        .then(() => {
+          this.$vToastify.success("Action was successful !");
+          this.dialog = false;
+        });
     },
   },
   async mounted() {
