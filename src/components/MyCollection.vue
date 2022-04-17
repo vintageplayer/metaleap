@@ -6,7 +6,7 @@
       </v-row>
       <v-row v-else>
         <v-col
-          v-for="nft in getNFTList.filter((nft) => showNFT(nft.symbol, nft.token_uri))"
+          v-for="nft in getNFTList.filter((nft) => showNFT(nft.symbol, nft.token_uri, nft.contract_type))"
           :key="nft.token_id"
           cols="4"
           height="330"
@@ -66,10 +66,10 @@ export default {
         tokenId: tokenId,
       });
     },
-    showNFT(symbol, tokenUri) {
+    showNFT(symbol, tokenUri, contractType) {
       console.log(symbol, tokenUri);
-      if (symbol != "wNFT") {
-        if (tokenUri != "" && tokenUri != null && tokenUri != "abcd") {
+      if (symbol != "wNFT" && contractType == "ERC721") {
+        if (tokenUri != "" && tokenUri != null && tokenUri != "abcd" ) {
           return true;
         }
       }

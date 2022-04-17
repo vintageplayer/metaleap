@@ -1,7 +1,7 @@
 <template>
   <v-container>
     <v-main v-if="getConnectedAccount">
-      <v-row v-if="getNFTs == null" style="text-align: center" align="center" justify="center">
+      <v-row v-if="getNFTs == null || getNFTs.length == 0" style="text-align: center" align="center" justify="center" class="plain--text">
         No NFTs present in the collection
       </v-row>
       <v-row v-else>
@@ -11,7 +11,7 @@
           :retain-focus="false"
           persistent
           v-model="dialog"
-          max-width="450"
+          max-width="600"
         >
           <template v-slot:activator="{ on, attrs }">
             <div class="wNFT-card">
@@ -23,7 +23,8 @@
                 </v-card>
               </v-row>
               <v-row justify="center">
-                <v-btn color="primary" dark v-bind="attrs" v-on:click="open_dialog(nft)"> Options </v-btn>
+                <v-btn color="accent" dark v-bind="attrs" v-on:click="open_dialog(nft)" style="margin-right:5px;"> Options </v-btn>
+                <v-btn color="accent" dark @click="unwrap(nft.unwrappedTokenAddress, nft.unwrappedTokenId)"> Un-wrap NFT </v-btn>
               </v-row>
             </div>
           </template>
@@ -42,7 +43,7 @@
                   >
                 </v-row>
                 <v-row>
-                  <v-col>Player: {{ player || "No player assigned" }}</v-col>
+                  <v-col>Player: {{ user || "No player assigned" }}</v-col>
                 </v-row>
                 <v-row>
                   <v-text-field v-model="address" label="Enter Address"></v-text-field>
@@ -54,6 +55,7 @@
             <v-card-actions>
               <v-btn color="primary" text @click="submit('approve', nft.tokenId)"> Change Manager </v-btn>
               <v-btn color="primary" text @click="submit('transfer', nft.tokenId)"> Change Player </v-btn>
+              
               <v-spacer></v-spacer>
               <v-btn color="primary" text @click="dialog = false"> Close </v-btn>
             </v-card-actions>
@@ -86,7 +88,7 @@ export default {
   }),
   computed: {
     getNFTs() {
-      if (this.$store.state.dataList_WrappedNFTs.nfts == null || this.$store.state.dataList_WrappedNFTs.nfts == {})
+      if (this.$store.state.dataList_WrappedNFTs.nfts == null || this.$store.state.dataList_WrappedNFTs.nfts == [])
         return null;
       return this.$store.state.dataList_WrappedNFTs.nfts;
     },
@@ -130,6 +132,20 @@ export default {
         from: this.user,
         to: this.address,
         tokenId: this.tokenId,
+      });
+
+      this.dialog = false;
+    },
+    unwrap(unwrappedTokenAddress, unwrappedTokenId) {
+      let account = this.$store.state.walletModule.account;
+      if (account == "" || account == null) {
+        this.$vToastify.warning("Connect your wallet please");
+        return;
+      }
+
+      this.$store.dispatch("unwrapNFT", {
+        unwrappedTokenAddress,
+        unwrappedTokenId
       });
 
       this.dialog = false;

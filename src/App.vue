@@ -31,7 +31,7 @@
             }}</v-btn>
           </template>
           <v-list>
-            <v-list-item v-for="(item, index) in items" :key="index" link @click="handleClick(index)">
+            <v-list-item v-for="(item, index) in items" :key="index" :disabled="item.disabled" link @click="handleClick(index)">
               <v-list-item-title>{{ item.title }}</v-list-item-title>
             </v-list-item>
           </v-list>
@@ -141,11 +141,12 @@ export default {
   },
 
   data: () => ({
-    toggle_none: null,
+    toggle_none: 0,
     example1: "",
     items: [
       {
         title: "Metamask Login",
+        diabled: false,
         click() {
           this.$store.dispatch("connectToMetamask").walletModule;
           // console.log(window.ethereum.request({ method: 'eth_accounts' }))
@@ -153,6 +154,7 @@ export default {
       },
       {
         title: "walletconnect",
+        disabled: true,
         click() {
           this.$store.dispatch("connectToWalletconnect").walletModule;
           // console.log(window.ethereum.request({ method: 'eth_accounts' }))
@@ -179,6 +181,7 @@ export default {
   async mounted() {
     let a = 1;
     let b = 1;
+    this.$store.dispatch("connectToMetamask");
     while (a == b) {
       await sleep(10000);
       await this.$store.dispatch("refreshData");
